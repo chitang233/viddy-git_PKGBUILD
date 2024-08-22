@@ -2,12 +2,13 @@ name: AUR CI
 on:
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - '.SRCINFO'
       - 'PKGBUILD'
   schedule:
     - cron: '0 0 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
