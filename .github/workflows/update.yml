@@ -1,0 +1,41 @@
+name: AUR CI
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '.SRCINFO'
+      - 'PKGBUILD'
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  update-aur:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update on AUR
+        uses: chitang233/aur-pkgbuild-builder@main
+        with:
+          deploy_key: ${{ secrets.DEPLOY_KEY }}
+          package_name: 'viddy-git'
+      - name: Update on GitHub
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/private
+          chmod 600 ~/.ssh/private
+          eval $(ssh-agent -s)
+          ssh-add ~/.ssh/private
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+          git clone aur@aur.archlinux.org:viddy-git.git
+          rm PKGBUILD .SRCINFO
+          cp viddy-git/PKGBUILD viddy-git/.SRCINFO .
+          rm -rf viddy-git
+          git add PKGBUILD .SRCINFO
+          git commit -m "Updated PKGBUILD and .SRCINFO"
+          git push
